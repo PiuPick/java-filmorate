@@ -8,8 +8,8 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -95,7 +95,7 @@ public class FilmController {
     }
 
     @GetMapping
-    public Collection<Film> getFilms() {
-        return films.values();
+    public List<Film> getFilms() {
+        return List.copyOf(films.values());
     }
 }
