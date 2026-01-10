@@ -6,6 +6,7 @@ import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exception.DuplicateDataException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 
 import java.time.LocalDate;
 
@@ -18,7 +19,7 @@ public class FilmControllerTests {
 
     @BeforeEach
     void setUp() {
-        filmController = new FilmController();
+        filmController = new FilmController(new InMemoryFilmStorage());
 
         film = new Film();
         film.setName("Фильм");
