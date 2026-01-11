@@ -6,6 +6,7 @@ import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.exception.DuplicateDataException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
@@ -19,7 +20,7 @@ public class UserControllerTests {
 
     @BeforeEach
     void setUp() {
-        userController = new UserController(new InMemoryUserStorage());
+        userController = new UserController(new UserService(new InMemoryUserStorage()));
 
         user = new User();
         user.setName("leo");

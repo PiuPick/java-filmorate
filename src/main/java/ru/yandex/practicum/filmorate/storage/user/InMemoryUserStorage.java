@@ -62,7 +62,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User createUser(User newUser) {
+    public User create(User newUser) {
         log.info("Начало создания пользователя");
 
         newUser.setId(getNextId());
@@ -74,7 +74,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User updateUser(User updatedUser) {
+    public User update(User updatedUser) {
         log.info("Начало обновления пользователя с id={}", updatedUser.getId());
         if (users.containsKey(updatedUser.getId())) {
             validateUser(updatedUser);
@@ -88,7 +88,19 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public List<User> getUsers() {
+    public User getById(int id) {
+        log.info("Начало поиска пользователя с id={}", id);
+        if (users.containsKey(id)) {
+            log.info("Пользователь с id={} найден", id);
+            return users.get(id);
+        } else {
+            log.error("Ошибка: пользователь с id={} не найден", id);
+            throw new NotFoundException("Пользователь с id=" + id + " не найден");
+        }
+    }
+
+    @Override
+    public List<User> getAll() {
         return List.copyOf(users.values());
     }
 }

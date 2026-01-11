@@ -68,33 +68,45 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public Film createFilm(Film newFilm) {
+    public Film create(Film film) {
         log.info("Начало создания фильма");
 
-        newFilm.setId(getNextId());
-        validateFilm(newFilm);
-        films.put(newFilm.getId(), newFilm);
-        log.info("Новый фильм name=\"{}\" с id={} добавлен в каталог", newFilm.getName(), newFilm.getId());
+        film.setId(getNextId());
+        validateFilm(film);
+        films.put(film.getId(), film);
+        log.info("Новый фильм name=\"{}\" с id={} добавлен в каталог", film.getName(), film.getId());
 
-        return newFilm;
+        return film;
     }
 
     @Override
-    public Film updateFilm(Film updatedFilm) {
-        log.info("Начало обновления фильма с id={}", updatedFilm.getId());
-        if (films.containsKey(updatedFilm.getId())) {
-            validateFilm(updatedFilm);
-            films.put(updatedFilm.getId(), updatedFilm);
+    public Film update(Film film) {
+        log.info("Начало обновления фильма с id={}", film.getId());
+        if (films.containsKey(film.getId())) {
+            validateFilm(film);
+            films.put(film.getId(), film);
             log.info("Обновленный фильм добавлен в каталог");
         } else {
-            log.error("Ошибка: фильм с id={} в каталоге не найден", updatedFilm.getId());
-            throw new NotFoundException("Фильм с id=" + updatedFilm.getId() + " не найден");
+            log.error("Ошибка: фильм с id={} в каталоге не найден", film.getId());
+            throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
         }
-        return updatedFilm;
+        return film;
     }
 
     @Override
-    public List<Film> getFilms() {
+    public Film getById(int id) {
+        log.info("Начало поиска фильма с id={}", id);
+        if (films.containsKey(id)) {
+            log.info("Фильм с id={} найден", id);
+            return films.get(id);
+        } else {
+            log.error("Ошибка: фильм с id={} в каталоге не найден", id);
+            throw new NotFoundException("Фильм с id=" + id + " не найден");
+        }
+    }
+
+    @Override
+    public List<Film> getAll() {
         return List.copyOf(films.values());
     }
 }
