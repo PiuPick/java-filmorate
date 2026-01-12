@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.DuplicateDataException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.validation.UserValidator;
@@ -28,14 +27,12 @@ public class UserService {
             user.setName(user.getLogin());
         }
         userValidator.validate(user);
-        validateUserUniqueness(user);
         return userStorage.create(user);
     }
 
     public User updateUser(User user) {
         userStorage.getById(user.getId());
         userValidator.validate(user);
-        validateUserUniqueness(user);
         return userStorage.update(user);
     }
 
@@ -94,20 +91,5 @@ public class UserService {
 
     public User getUserById(int id) {
         return userStorage.getById(id);
-    }
-
-    private void validateUserUniqueness(User user) {
-        userStorage.getAll().stream()
-                .filter(existing -> existing.getId() != user.getId())
-                .filter(existing ->
-                        existing.getLogin().equals(user.getLogin()) ||
-                                existing.getEmail().equals(user.getEmail())
-                )
-                .findFirst()
-                .ifPresent(duplicate -> {
-                    throw new DuplicateDataException(
-                            "Пользователь с таким логином или email уже существует"
-                    );
-                });
     }
 }
