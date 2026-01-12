@@ -1,26 +1,41 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.DuplicateDataException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.validation.UserValidator;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @Service
 public class UserService {
     private final UserStorage userStorage;
+    private final UserValidator userValidator;
 
-    public UserService(UserStorage userStorage) {
+    public UserService(UserStorage userStorage, UserValidator userValidator) {
         this.userStorage = userStorage;
+        this.userValidator = userValidator;
     }
 
     public User createUser(User user) {
+        if ((user.getName() == null || user.getName().isBlank()) && user.getLogin() != null) {
+            log.info("Пользователю с id={} присвоен name=login=\"{}\"", user.getId(), user.getLogin());
+            user.setName(user.getLogin());
+        }
+        userValidator.validate(user);
+        validateUserUniqueness(user);
         return userStorage.create(user);
     }
 
     public User updateUser(User user) {
+        userStorage.getById(user.getId());
+        userValidator.validate(user);
+        validateUserUniqueness(user);
         return userStorage.update(user);
     }
 
@@ -79,5 +94,20 @@ public class UserService {
 
     public User getUserById(int id) {
         return userStorage.getById(id);
+    }
+
+    private void validateUserUniqueness(User user) {
+        userStorage.getAll().stream()
+                .filter(existing -> existing.getId() != user.getId())
+                .filter(existing ->
+                        existing.getLogin().equals(user.getLogin()) ||
+                                existing.getEmail().equals(user.getEmail())
+                )
+                .findFirst()
+                .ifPresent(duplicate -> {
+                    throw new DuplicateDataException(
+                            "Пользователь с таким логином или email уже существует"
+                    );
+                });
     }
 }

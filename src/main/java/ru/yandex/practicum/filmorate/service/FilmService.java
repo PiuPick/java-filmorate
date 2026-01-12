@@ -1,10 +1,12 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.DuplicateDataException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
 import java.util.List;
 
@@ -12,17 +14,24 @@ import java.util.List;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final FilmValidator filmValidator;
 
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
+    public FilmService(FilmStorage filmStorage, UserStorage userStorage, FilmValidator filmValidator) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.filmValidator = filmValidator;
     }
 
     public Film createFilm(Film film) {
+        filmValidator.validate(film);
+        validateFilmUniqueness(film);
         return filmStorage.create(film);
     }
 
     public Film updateFilm(Film film) {
+        filmStorage.getById(film.getId());
+        filmValidator.validate(film);
+        validateFilmUniqueness(film);
         return filmStorage.update(film);
     }
 
@@ -54,5 +63,15 @@ public class FilmService {
                 .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
                 .limit(count)
                 .toList();
+    }
+
+    private void validateFilmUniqueness(Film film) {
+        filmStorage.getAll().stream()
+                .filter(existing -> existing.getId() != film.getId())
+                .filter(existing -> existing.getName().equals(film.getName()))
+                .findFirst()
+                .ifPresent(f -> {
+                    throw new DuplicateDataException("Фильм с таким названием уже существует");
+                });
     }
 }
