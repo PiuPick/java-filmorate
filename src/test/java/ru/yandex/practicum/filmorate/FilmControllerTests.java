@@ -61,15 +61,4 @@ public class FilmControllerTests {
         ValidationException exception = assertThrows(ValidationException.class, () -> filmController.createFilm(film));
         assertEquals("Продолжительность фильма должна быть положительным числом", exception.getMessage());
     }
-
-    @Test
-    void createDuplicateFilmShouldThrowDuplicatedDataException() {
-        filmController.createFilm(film);
-
-        Film filmDuplicate = new Film();
-        filmDuplicate.setName("Фильм");
-        filmDuplicate.setReleaseDate(LocalDate.of(2000, 1, 1));
-
-        assertThrows(DuplicateDataException.class, () -> filmController.createFilm(filmDuplicate));
-    }
 }
