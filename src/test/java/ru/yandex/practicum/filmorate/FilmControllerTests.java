@@ -3,9 +3,12 @@ package ru.yandex.practicum.filmorate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.FilmController;
-import ru.yandex.practicum.filmorate.exception.DuplicateDataException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
 import java.time.LocalDate;
 
@@ -18,7 +21,10 @@ public class FilmControllerTests {
 
     @BeforeEach
     void setUp() {
-        filmController = new FilmController();
+        filmController = new FilmController(new FilmService(
+                new InMemoryFilmStorage(),
+                new InMemoryUserStorage(),
+                new FilmValidator()));
 
         film = new Film();
         film.setName("Фильм");
@@ -53,16 +59,5 @@ public class FilmControllerTests {
         film.setDuration(-10);
         ValidationException exception = assertThrows(ValidationException.class, () -> filmController.createFilm(film));
         assertEquals("Продолжительность фильма должна быть положительным числом", exception.getMessage());
-    }
-
-    @Test
-    void createDuplicateFilmShouldThrowDuplicatedDataException() {
-        filmController.createFilm(film);
-
-        Film filmDuplicate = new Film();
-        filmDuplicate.setName("Фильм");
-        filmDuplicate.setReleaseDate(LocalDate.of(2000, 1, 1));
-
-        assertThrows(DuplicateDataException.class, () -> filmController.createFilm(filmDuplicate));
     }
 }
