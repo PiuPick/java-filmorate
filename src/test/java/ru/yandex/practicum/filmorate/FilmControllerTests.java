@@ -3,8 +3,9 @@ package ru.yandex.practicum.filmorate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.FilmController;
+import ru.yandex.practicum.filmorate.dto.film.NewFilmRequest;
+import ru.yandex.practicum.filmorate.dto.mpa.MpaRatingDto;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
@@ -17,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FilmControllerTests {
     private FilmController filmController;
-    private Film film;
+    private NewFilmRequest film;
 
     @BeforeEach
     void setUp() {
@@ -26,11 +27,15 @@ public class FilmControllerTests {
                 new InMemoryUserStorage(),
                 new FilmValidator()));
 
-        film = new Film();
+        film = new NewFilmRequest();
         film.setName("Фильм");
         film.setDescription("Описание");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
+
+        MpaRatingDto mpa = new MpaRatingDto();
+        mpa.setId(3);
+        film.setMpa(mpa);
     }
 
     @Test

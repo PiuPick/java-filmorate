@@ -2,7 +2,9 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.dto.user.NewUserRequest;
+import ru.yandex.practicum.filmorate.dto.user.UpdateUserRequest;
+import ru.yandex.practicum.filmorate.dto.user.UserDto;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.List;
@@ -18,22 +20,22 @@ public class UserController {
     }
 
     @PostMapping
-    public User createUser(@RequestBody User newUser) {
+    public UserDto createUser(@RequestBody NewUserRequest newUser) {
         return userService.createUser(newUser);
     }
 
     @PutMapping
-    public User updateUser(@RequestBody User updatedUser) {
+    public UserDto updateUser(@RequestBody UpdateUserRequest updatedUser) {
         return userService.updateUser(updatedUser);
     }
 
     @GetMapping
-    public List<User> getUsers() {
+    public List<UserDto> getUsers() {
         return userService.getUsers();
     }
 
     @GetMapping("/{id}")
-    public User getUserById(@PathVariable int id) {
+    public UserDto getUserById(@PathVariable int id) {
         return userService.getUserById(id);
     }
 
@@ -50,12 +52,12 @@ public class UserController {
     }
 
     @GetMapping("/{id}/friends")
-    public Set<User> getFriends(@PathVariable int id) {
+    public Set<UserDto> getFriends(@PathVariable int id) {
         return userService.getFriends(id);
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
-    public Set<User> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
+    public Set<UserDto> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
         return userService.getCommonFriends(id, otherId);
     }
 }
