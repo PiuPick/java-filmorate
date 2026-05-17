@@ -6,13 +6,13 @@ import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaRatingStorage;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository("filmDbStorage")
 public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
@@ -27,11 +27,17 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     private static final String DELETE_LIKE_QUERY = "DELETE FROM film_like WHERE film_id = ? AND user_id = ?";
     private final MpaRatingStorage mpaStorage;
     private final GenreStorage genreStorage;
+    private final RowMapper<MpaRating> mpaMapper;
+    private final RowMapper<Genre> genreMapper;
 
-    public FilmDbStorage(JdbcTemplate jdbc, RowMapper<Film> mapper, MpaRatingStorage mpaStorage, GenreStorage genreStorage) {
+    public FilmDbStorage(JdbcTemplate jdbc, RowMapper<Film> mapper,
+                         MpaRatingStorage mpaStorage, GenreStorage genreStorage,
+                         RowMapper<MpaRating> mpaMapper, RowMapper<Genre> genreMapper) {
         super(jdbc, mapper);
         this.mpaStorage = mpaStorage;
         this.genreStorage = genreStorage;
+        this.mpaMapper = mpaMapper;
+        this.genreMapper = genreMapper;
     }
 
     @Override
@@ -52,7 +58,7 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
             genreStorage.addGenreToFilm(id, genre.getId());
         }
 
-        return film;
+        return getById(id);
     }
 
     @Override
@@ -74,7 +80,7 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
             genreStorage.addGenreToFilm(film.getId(), genre.getId());
         }
 
-        return film;
+        return getById(film.getId());
     }
 
     @Override
@@ -83,14 +89,16 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
         if (filmOptional.isEmpty()) throw new NotFoundException("Фильм с id=" + id + " не найден");
 
         Film film = filmOptional.get();
-        enrichFilm(film);
+        film.setMpa(mpaStorage.getById(film.getMpa().getId()));
+        film.setGenres(genreStorage.getByFilmId(film.getId()));
+        film.setLikes(new HashSet<>(jdbc.queryForList(FIND_LIKES_QUERY, Integer.class, film.getId())));
         return film;
     }
 
     @Override
     public List<Film> getAll() {
         List<Film> films = findMany(FIND_ALL_FILMS_QUERY);
-        films.forEach(this::enrichFilm);
+        enrichFilmsBatch(films);
         return films;
     }
 
@@ -107,13 +115,56 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     @Override
     public List<Film> getPopular(int limit) {
         List<Film> films = findMany(FIND_POPULAR_FILMS_QUERY, limit);
-        films.forEach(this::enrichFilm);
+        enrichFilmsBatch(films);
         return films;
     }
 
-    private void enrichFilm(Film film) {
-        film.setMpa(mpaStorage.getById(film.getMpa().getId()));
-        film.setGenres(genreStorage.getByFilmId(film.getId()));
-        film.setLikes(new HashSet<>(jdbc.queryForList(FIND_LIKES_QUERY, Integer.class, film.getId())));
+    private void enrichFilmsBatch(List<Film> films) {
+        if (films.isEmpty()) return;
+
+        List<Integer> filmIds = films.stream().map(Film::getId).collect(Collectors.toList());
+
+        Map<Integer, MpaRating> mpaMap = loadMpaForFilms(filmIds);
+        Map<Integer, Set<Genre>> genresMap = loadGenresForFilms(filmIds);
+        Map<Integer, Set<Integer>> likesMap = loadLikesForFilms(filmIds);
+
+        for (Film film : films) {
+            film.setMpa(mpaMap.getOrDefault(film.getMpa().getId(), film.getMpa()));
+            film.setGenres(genresMap.getOrDefault(film.getId(), new HashSet<>()));
+            film.setLikes(likesMap.getOrDefault(film.getId(), new HashSet<>()));
+        }
+    }
+
+    private Map<Integer, MpaRating> loadMpaForFilms(List<Integer> filmIds) {
+        String inSql = filmIds.stream().map(id -> "?").collect(Collectors.joining(","));
+        String sql = "SELECT * FROM mpa_rating WHERE id IN (" + inSql + ")";
+        List<MpaRating> mpas = jdbc.query(sql, mpaMapper, filmIds.toArray());
+        return mpas.stream().collect(Collectors.toMap(MpaRating::getId, mpa -> mpa));
+    }
+
+    private Map<Integer, Set<Genre>> loadGenresForFilms(List<Integer> filmIds) {
+        String inSql = filmIds.stream().map(id -> "?").collect(Collectors.joining(","));
+        String sql = "SELECT fg.film_id, g.id, g.name FROM film_genre fg JOIN genre g ON fg.genre_id = g.id WHERE fg.film_id IN (" + inSql + ")";
+
+        Map<Integer, Set<Genre>> genres = new HashMap<>();
+        jdbc.query(sql, rs -> {
+            int filmId = rs.getInt("film_id");
+            Genre genre = genreMapper.mapRow(rs, rs.getRow());
+            genres.computeIfAbsent(filmId, k -> new HashSet<>()).add(genre);
+        }, filmIds.toArray());
+        return genres;
+    }
+
+    private Map<Integer, Set<Integer>> loadLikesForFilms(List<Integer> filmIds) {
+        String inSql = filmIds.stream().map(id -> "?").collect(Collectors.joining(","));
+        String sql = "SELECT film_id, user_id FROM film_like WHERE film_id IN (" + inSql + ")";
+
+        Map<Integer, Set<Integer>> likesMap = new HashMap<>();
+        jdbc.query(sql, rs -> {
+            int filmId = rs.getInt("film_id");
+            int userId = rs.getInt("user_id");
+            likesMap.computeIfAbsent(filmId, k -> new HashSet<>()).add(userId);
+        }, filmIds.toArray());
+        return likesMap;
     }
 }

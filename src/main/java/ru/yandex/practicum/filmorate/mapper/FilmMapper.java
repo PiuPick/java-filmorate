@@ -11,6 +11,8 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -80,7 +82,8 @@ public final class FilmMapper {
         filmDto.setGenres(film.getGenres()
                 .stream()
                 .map(GenreMapper::mapToGenreDto)
-                .collect(Collectors.toSet()));
+                .sorted(Comparator.comparing(GenreDto::getId))
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
 
         filmDto.setLikes(film.getLikes());
 

@@ -14,6 +14,7 @@ import ru.yandex.practicum.filmorate.validation.UserValidator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -77,11 +78,10 @@ public class UserService {
     }
 
     public Set<UserDto> getFriends(int userId) {
-        User user = userStorage.getById(userId);
-        Set<UserDto> friends = new HashSet<>();
-        for (Integer friendId : user.getFriends())
-            friends.add(UserMapper.mapToUserDto(userStorage.getById(friendId)));
-        return friends;
+        userStorage.getById(userId);
+        return userStorage.getFriendsByUserId(userId).stream()
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toSet());
     }
 
     public UserDto getUserById(int id) {
