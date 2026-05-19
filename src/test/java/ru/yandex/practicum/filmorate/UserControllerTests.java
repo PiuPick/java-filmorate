@@ -3,9 +3,10 @@ package ru.yandex.practicum.filmorate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.UserController;
+import ru.yandex.practicum.filmorate.dto.user.NewUserRequest;
+import ru.yandex.practicum.filmorate.dto.user.UserDto;
 import ru.yandex.practicum.filmorate.exception.DuplicateDataException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 import ru.yandex.practicum.filmorate.validation.UserValidator;
@@ -17,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class UserControllerTests {
     private UserController userController;
-    private User user;
+    private NewUserRequest user;
 
     @BeforeEach
     void setUp() {
@@ -25,7 +26,7 @@ public class UserControllerTests {
                 new InMemoryUserStorage(),
                 new UserValidator()));
 
-        user = new User();
+        user = new NewUserRequest();
         user.setName("leo");
         user.setLogin("login");
         user.setEmail("email@mail.ru");
@@ -70,7 +71,7 @@ public class UserControllerTests {
     @Test
     void createUserWithEmptyNameShouldSetNameToLogin() {
         user.setName("");
-        User createdUser = userController.createUser(user);
+        UserDto createdUser = userController.createUser(user);
         assertEquals("login", createdUser.getName());
     }
 
@@ -78,7 +79,7 @@ public class UserControllerTests {
     void createUserWithDuplicateLoginShouldThrowDuplicatedDataException() {
         userController.createUser(user);
 
-        User userDuplicateLogin = new User();
+        NewUserRequest userDuplicateLogin = new NewUserRequest();
         userDuplicateLogin.setLogin("login");
         userDuplicateLogin.setEmail("another@mail.ru");
 
@@ -89,7 +90,7 @@ public class UserControllerTests {
     void createUserWithDuplicateEmailShouldThrowDuplicatedDataException() {
         userController.createUser(user);
 
-        User userDuplicateEmail = new User();
+        NewUserRequest userDuplicateEmail = new NewUserRequest();
         userDuplicateEmail.setLogin("anotherLogin");
         userDuplicateEmail.setEmail("email@mail.ru");
 

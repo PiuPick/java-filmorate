@@ -27,9 +27,13 @@ public class FilmValidator {
             log.error("Ошибка валидации: Фильм с id={} имеет releaseDate={}", film.getId(), film.getReleaseDate());
             throw new ValidationException("Дата релиза — не раньше 28 декабря 1895 года");
         }
-        if (film.getDuration() < 0) {
+        if (film.getDuration() <= 0) {
             log.error("Ошибка валидации: Фильм с id={} имеет duration={}", film.getId(), film.getDuration());
             throw new ValidationException("Продолжительность фильма должна быть положительным числом");
+        }
+        if (film.getMpa() == null || film.getMpa().getId() < 1) {
+            log.error("Ошибка валидации: Фильм с id={} имеет Mpa={}", film.getId(), film.getMpa());
+            throw new ValidationException("Фильм должен иметь корректный Mpa");
         }
     }
 }

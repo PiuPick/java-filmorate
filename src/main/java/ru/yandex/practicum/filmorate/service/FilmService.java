@@ -1,13 +1,18 @@
 package ru.yandex.practicum.filmorate.service;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dto.film.FilmDto;
+import ru.yandex.practicum.filmorate.dto.film.NewFilmRequest;
+import ru.yandex.practicum.filmorate.dto.film.UpdateFilmRequest;
+import ru.yandex.practicum.filmorate.mapper.FilmMapper;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class FilmService {
@@ -15,50 +20,53 @@ public class FilmService {
     private final UserStorage userStorage;
     private final FilmValidator filmValidator;
 
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage, FilmValidator filmValidator) {
+    public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
+                       @Qualifier("userDbStorage") UserStorage userStorage,
+                       FilmValidator filmValidator) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.filmValidator = filmValidator;
     }
 
-    public Film createFilm(Film film) {
+    public FilmDto createFilm(NewFilmRequest newFilm) {
+        Film film = FilmMapper.mapToFilm(newFilm);
         filmValidator.validate(film);
-        return filmStorage.create(film);
+        return FilmMapper.mapToFilmDto(filmStorage.create(film));
     }
 
-    public Film updateFilm(Film film) {
-        filmStorage.getById(film.getId());
+    public FilmDto updateFilm(UpdateFilmRequest updatedFilm) {
+        Film film = FilmMapper.mapToFilm(updatedFilm);
         filmValidator.validate(film);
-        return filmStorage.update(film);
+        return FilmMapper.mapToFilmDto(filmStorage.update(film));
     }
 
-    public List<Film> getFilms() {
-        return filmStorage.getAll();
+    public List<FilmDto> getFilms() {
+        return filmStorage.getAll()
+                .stream()
+                .map(FilmMapper::mapToFilmDto)
+                .collect(Collectors.toList());
     }
 
-    public Film getFilmById(int id) {
-        return filmStorage.getById(id);
+    public FilmDto getFilmById(int id) {
+        return FilmMapper.mapToFilmDto(filmStorage.getById(id));
     }
 
     public void addLike(int filmId, int userId) {
-        Film film = filmStorage.getById(filmId);
-        User user = userStorage.getById(userId);
-        film.getLikes().add(user.getId());
-        filmStorage.update(film);
+        filmStorage.getById(filmId);
+        userStorage.getById(userId);
+        filmStorage.addLike(filmId, userId);
     }
 
     public void deleteLike(int filmId, int userId) {
-        Film film = filmStorage.getById(filmId);
-        User user = userStorage.getById(userId);
-        film.getLikes().remove(user.getId());
-        filmStorage.update(film);
+        filmStorage.getById(filmId);
+        userStorage.getById(userId);
+        filmStorage.deleteLike(filmId, userId);
     }
 
-    public List<Film> getPopularFilms(int count) {
-        return filmStorage.getAll()
+    public List<FilmDto> getPopularFilms(int limit) {
+        return filmStorage.getPopular(limit)
                 .stream()
-                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
-                .limit(count)
-                .toList();
+                .map(FilmMapper::mapToFilmDto)
+                .collect(Collectors.toList());
     }
 }

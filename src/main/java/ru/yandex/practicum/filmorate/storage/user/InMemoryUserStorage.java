@@ -9,7 +9,7 @@ import ru.yandex.practicum.filmorate.model.User;
 import java.util.*;
 
 @Slf4j
-@Component
+@Component("inMemoryUserStorage")
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Integer, User> users = new HashMap<>();
     private final Set<String> logins = new HashSet<>();
@@ -82,5 +82,29 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public List<User> getAll() {
         return List.copyOf(users.values());
+    }
+
+    @Override
+    public void addFriend(int userId, int friendId) {
+        User user = getById(userId);
+        user.getFriends().add(friendId);
+        update(user);
+    }
+
+    @Override
+    public void deleteFriend(int userId, int friendId) {
+        User user = getById(userId);
+        user.getFriends().remove(friendId);
+        update(user);
+    }
+
+    @Override
+    public Set<User> getFriendsByUserId(int userId) {
+        User user = getById(userId);
+        Set<User> friends = new HashSet<>();
+        for (Integer friendId : user.getFriends()) {
+            friends.add(getById(friendId));
+        }
+        return friends;
     }
 }
